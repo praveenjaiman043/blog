@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book Notes</title>
+
+<style>
+    body { margin: 0; padding: 0; font-family: sans-serif; background: #f3f3f3; transition: .3s; }
+    .dark { background: #121212; color: white; }
+    header { background: #4b7bec; color: white; padding: 15px; text-align: center; font-size: 22px; }
+    .dark header { background: #222; }
+
+    .controls { text-align: center; margin: 10px; }
+    button { padding: 10px 20px; margin: 5px; font-size: 16px; border: none; background: #4b7bec; color: white; border-radius: 5px; cursor: pointer; }
+    .dark button { background: #333; }
+
+    .book-container {
+        width: 90%; max-width: 800px; margin: 20px auto;
+        background: white; padding: 20px; border-radius: 12px;
+        box-shadow: 0px 0px 10px rgba(0,0,0,0.2); position: relative;
+    }
+    .dark .book-container { background: #1e1e1e; }
+
+    textarea {
+        width: 100%; height: 50vh; border: none; outline: none;
+        resize: none; font-size: 18px; background: transparent; color: inherit;
+    }
+
+    .page-number { text-align: center; margin-top: 10px; font-weight: bold; }
+</style>
+
+<!-- jsPDF Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+</head>
+
+<body>
+
+<header>My Book Notes</header>
+
+<div class="controls">
+    <button onclick="prevPage()">⬅ Prev Page</button>
+    <button onclick="nextPage()">Next Page ➡</button>
+    <button onclick="toggleDark()">Dark Mode</button>
+    <button onclick="startVoice()">🎤 Voice</button>
+    <button onclick="downloadPDF()">📄 Save Page as PDF</button>
+</div>
+
+<div class="book-container">
+    <textarea id="textBox" placeholder="Write on this page..."></textarea>
+    <div class="page-number" id="pageNum">Page 1</div>
+</div>
+
+<script>
+let page = Number(localStorage.getItem("currentPage")) || 1;
+let textBox = document.getElementById("textBox");
+
+function loadPage() {
+    textBox.value = localStorage.getItem("page_" + page) || "";
+    document.getElementById("pageNum").innerText = "Page " + page;
+    localStorage.setItem("currentPage", page);
+}
+loadPage();
+
+textBox.addEventListener("input", () => {
+    localStorage.setItem("page_" + page, textBox.value);
+});
+
+function nextPage() { page++; loadPage(); }
+function prevPage() { if (page > 1) { page--; loadPage(); } }
+
+function toggleDark() {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("darkMode", document.body.classList.contains("dark"));
+}
+if (localStorage.getItem("darkMode") === "true") {
+    document.body.classList.add("dark");
+}
+
+// VOICE INPUT
+function startVoice() {
+    if (!("webkitSpeechRecognition" in window)) {
+        alert("Voice not supported");
+        return;
+    }
+    const rec = new webkitSpeechRecognition();
+    rec.lang = "en-IN";
+    rec.onresult = (event) => {
+        textBox.value += "\n" + event.results[0][0].transcript;
+        textBox.dispatchEvent(new Event("input"));
+    };
+    rec.start();
+}
+
+// PDF DOWNLOAD
+async function downloadPDF() {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+
+    let content = textBox.value || " ";
+
+    let lines = pdf.splitTextToSize(content, 180);
+    pdf.text(lines, 15, 15);
+
+    pdf.save("Page-" + page + ".pdf");
+}
+</script>
+
+</body>
+</html>
